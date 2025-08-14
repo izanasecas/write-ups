@@ -52,7 +52,7 @@ Cada máquina incluye una explicación paso a paso y capturas del proceso.
 ---
 
 <ul class="machine-list">
-  <li><a href="htb-ejemplo/writeup.md">HTB Ejemplo</a> — Enumeración básica y explotación inicial</li>
+  <li><a href="cap/cap.md">HTB Cap</a> — Write up de la máquina Cap</li>
   <!-- Añade aquí más máquinas -->
 </ul>
 
