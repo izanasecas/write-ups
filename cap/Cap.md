@@ -1,45 +1,88 @@
-- Tags: #web #Vunlerability #FTP #Capabilites #Analisist 
-----
-
-![[Cap_card.png]]
+---
+title: "HTB - Cap"
+tags: [web, vulnerability, ftp, capabilities, analysis]
+---
 
 # Enumeración
 
-> Empezamos con el reconocimiento básico de la máquina con un escaneo de puertos a ver que encontramos.
-> ![[Cap_allports.png]]
-> En este caso vemos que tenemos 3 puertos el 21 que corresponde al [[FTP]] uno 22 el servicio [[Ssh]] y un 80 que corresponde a un servicio [[HTTP]].
-> Con esto vamos a realizar un escaneo más exhaustivo para ver las versiones que corren.
->   ![[Cap_Targeted.png]]
->   Con esto vemos que versión corre para el FTP para el SSH y que tipo de servidor corre el servicio HTTP en este caso tenemos gunicorn.  
->   
->   Como no tenemos nada de usuarios para probar ni el FTP ni el SSH vamos a tirar de el servicio web a ver que sacamos.
+Empezamos con el reconocimiento básico de la máquina con un escaneo de puertos para ver qué encontramos.
+
+![](Cap_allports.png)
+
+En este caso, vemos que tenemos tres puertos abiertos:  
+- **21**: FTP  
+- **22**: SSH  
+- **80**: HTTP  
+
+Con esto, realizamos un escaneo más exhaustivo para ver las versiones que corren.
+
+![](Cap_Targeted.png)
+
+Ahora podemos ver qué versión corre en el FTP, en el SSH, y qué tipo de servidor corre el servicio HTTP. En este caso, se trata de **gunicorn**.  
+
+Como no tenemos credenciales de usuario para probar en el FTP ni en el SSH, vamos a tirar del servicio web a ver qué podemos sacar.
+
+---
 
 ## Servicio Web
 
-> De primeras tiramos un `whatweb` para ver que se esta corriendo de primeras.
-> ![[whatweb_Cap.png]]
-> Pues podemos ver que estamos corriendo un gunicorn como servidor que tenemos un panel con varias capturas de red la cual podemos descargar y examinar.
-> La pagina principal se ve tal que así:
-> ![[Cap_main_web_server.png]]
-> Tenemos un posible usuario para probar el FTP y el SSH `Nathan` lo dejamos para más adelante que esto tiene chicha.
+De primeras, lanzamos un `whatweb` para ver qué está corriendo.
+
+![](whatweb_Cap.png)
+
+Podemos ver que el servidor es **gunicorn** y que tenemos un panel con varias capturas de red descargables para examinar.
+
+La página principal se ve así:
+
+![](Cap_main_web_server.png)
+
+Aquí encontramos un posible usuario para probar en FTP y SSH: Nathan
+
+Lo dejamos para más adelante, porque parece que esta parte tiene más chicha.
+
+---
 
 ### IDOR
-> Viendo como se tratan las URL parece que al cambiar el numero tenemos un posible IDOR el cual podemos llevar a tener capturas que no han sido de este usuario a si que vamos a realizar un ataque tipo intruder con Burpsuite a ver si sacamos algo en conclusión si no, con WFUZZ vamos a realizar un ataque de fuera bruta más rápido. 
-> 
-> Al final los únicos Id válidos son del 0 al 10 los demás nos hacen un  redirect y con el intruder vemos que el Id 0 es interesante 
-> Tenemos una captura de una tráfico vía FTP con un inicio de sesión y una contraseña.
-> ![[Cap_Captura.png]]
-> `nathan:Buck3tH4TF0RM3!` Con esto podemos probar a ver que hay en el FTP y a ver si vía SSH podemos entrar.
->  Vía FTP nos conectamos al `/home` del usuario `nathan` 
->  Y por ssh también funciona.
+
+Viendo cómo se tratan las URLs, parece que al cambiar el número en el parámetro tenemos un posible **IDOR**, lo que nos permitiría acceder a capturas que no pertenecen a este usuario.  
+
+Vamos a realizar un ataque tipo *Intruder* con **Burp Suite** para ver si conseguimos resultados.
+
+Tras las pruebas, los únicos IDs válidos son del `0` al `10`. Los demás provocan un redireccionamiento. Con *Intruder* vemos que el ID `0` es interesante:  
+
+Tenemos una captura de tráfico FTP con un inicio de sesión y contraseña.
+
+![](Cap_Captura.png)
+
+Credenciales encontradas:
+
+`nathan:Buck3tH4TF0RM3!`
+
+
+Con esto podemos probar el acceso a FTP y SSH.  
+
+- **FTP**: nos conectamos al `/home` del usuario `nathan`.  
+- **SSH**: también funciona con las mismas credenciales.
+
+---
 
 ## Escalada de privilegios
 
-> Vemos que `nathan` no tiene privilegios mas allá de los suyos personales, no hay más usuarios a parte de root y el.
-> ![[Cap_etc_passwd.png]]
+Vemos que `nathan` no tiene privilegios más allá de los suyos personales; no hay más usuarios aparte de `root` y él mismo.
 
-### Capabilities `python` 
-> Este mismo usuario no tiene ningún archivo interesante ni hay binarios con permisos SUID que podamos usar como escalada de privilegios, pero mirando las capabilities vemos esto tan interesante.
-> ![[Cap_capabilities.png]]
-> Vemos que un binario de Python versión 3.8 tiene la capability de `cap_setuid` la cual por [GTFOBin](https://gtfobins.github.io/gtfobins/python/)  podemos escalar privilegios como usuario root 
-> ![[Cap_privesc.png]]
+![](Cap_etc_passwd.png)
+
+---
+
+### Capabilities en Python
+
+Este usuario no tiene ningún archivo interesante ni hay binarios con permisos SUID que podamos usar para escalar privilegios. Sin embargo, revisando las *capabilities* encontramos algo muy interesante:
+
+![](Cap_capabilities.png)
+
+Un binario de Python versión 3.8 tiene la *capability* `cap_setuid`, la cual, según [GTFOBins](https://gtfobins.github.io/gtfobins/python/), nos permite escalar privilegios a usuario **root**.
+
+![](Cap_privesc.png)
+
+---
+
