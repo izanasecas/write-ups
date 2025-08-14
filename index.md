@@ -52,7 +52,7 @@ Cada máquina incluye una explicación paso a paso y capturas del proceso.
 ---
 
 <ul class="machine-list">
-  <li><a href="cap/index.md">HTB Cap</a> — Write up de la máquina Cap</li>
+  <li><a href="cap/">HTB Cap</a> — Write up de la máquina Cap</li>
   <!-- Añade aquí más máquinas -->
 </ul>
 
